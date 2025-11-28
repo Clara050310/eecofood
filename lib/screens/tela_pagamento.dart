@@ -1,137 +1,220 @@
 import 'package:flutter/material.dart';
-// ignore: depend_on_referenced_packages
+import 'package:qr_flutter/qr_flutter.dart';
 
-import 'dart:convert';
-import 'dart:typed_data';
+// 🎨 CORES DO PROTÓTIPO
+const Color _primaryColor = Color(0xFFC0392B);
+const Color _backgroundColor = Color(0xFFF5F5F5);
+const Color _cardColor = Color(0xFFFEF9F8);
 
 class TelaPagamento extends StatefulWidget {
   final double total;
 
-  const TelaPagamento({Key? key, required this.total}) : super(key: key);
+  const TelaPagamento({required this.total, super.key});
 
   @override
   _TelaPagamentoState createState() => _TelaPagamentoState();
 }
 
 class _TelaPagamentoState extends State<TelaPagamento> {
-  String? qrCodeCopiaCola;
-  Uint8List? qrCodeImage;
-  String status = 'aguardando';
-  String? pagamentoId;
-  
-  get http => null;
-
-  Future<void> gerarPix() async {
-    setState(() {
-      status = 'gerando';
-    });
-
-    try {
-      final response = await http.post(
-        Uri.parse('http://10.0.2.2:3000/criar-pix'), // use seu IP local se for celular físico
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'valor': 29.90,
-          'descricao': 'Cesta Eco Food',
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        pagamentoId = data['id'];
-        qrCodeCopiaCola = data['qrCodeCopiaCola'];
-        qrCodeImage = base64Decode(data['qrCodeBase64']);
-        status = 'gerado';
-        _verificarStatus();
-      } else {
-        status = 'erro';
-      }
-      setState(() {});
-    } catch (e) {
-      print('Erro: $e');
-      setState(() => status = 'erro');
-    }
-  }
-
-  // 🔁 Verifica a cada 5 segundos se o pagamento foi aprovado
-  Future<void> _verificarStatus() async {
-    Future.delayed(Duration(seconds: 5), () async {
-      if (pagamentoId == null) return;
-
-      final response = await http.get(
-        Uri.parse('https://api.mercadopago.com/v1/payments/$pagamentoId'),
-        headers: {
-          'Authorization':
-              'Bearer APP_USR-xxxxxxxxxxxx' // ⚠️ coloque seu access_token aqui temporariamente (ou crie endpoint seguro no backend)
-        },
-      );
-
-      final data = json.decode(response.body);
-      if (data['status'] == 'approved') {
-        setState(() => status = 'pago');
-      } else if (status != 'pago') {
-        _verificarStatus(); // tenta novamente até o pagamento ser aprovado
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: _backgroundColor,
+
       appBar: AppBar(
-        backgroundColor: const Color(0xFF4CAF50),
-        title: const Text('Pagamento via Pix'),
+        backgroundColor: _primaryColor,
         elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Column(
+          children: [
+            Text("Eco Food", style: TextStyle(fontSize: 16, color: Colors.white)),
+            Text("Forma de Pagamento", style: TextStyle(fontSize: 22, color: Colors.white, fontWeight: FontWeight.bold)),
+          ],
+        ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Center(
-          child: Builder(
-            builder: (context) {
-              if (status == 'aguardando') {
-                return ElevatedButton(
-                  onPressed: gerarPix,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4CAF50),
-                    minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Card(
+              color: _cardColor,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Total a Pagar:', style: TextStyle(fontSize: 18)),
+                    Text(
+                      'R\$ ${widget.total.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: _primaryColor,
+                      ),
                     ),
-                  ),
-                  child: const Text('Gerar Pix'),
-                );
-              } else if (status == 'gerando') {
-                return CircularProgressIndicator();
-              } else if (status == 'gerado') {
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Escaneie o QR Code abaixo para pagar:'),
-                    SizedBox(height: 20),
-                    Image.memory(qrCodeImage!, width: 250),
-                    SizedBox(height: 20),
-                    SelectableText(qrCodeCopiaCola ?? '',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[700])),
-                    SizedBox(height: 20),
-                    Text('Aguardando pagamento...'),
                   ],
-                );
-              } else if (status == 'pago') {
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green, size: 100),
-                    SizedBox(height: 20),
-                    Text('Pagamento aprovado!'),
-                  ],
-                );
-              } else {
-                return Text('Erro ao gerar Pix');
-              }
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+            const Text(
+              'Selecione a forma de pagamento:',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+
+            const SizedBox(height: 12),
+
+            _buildPaymentOption(
+              context,
+              'Cartão de Crédito',
+              Icons.credit_card,
+            ),
+
+            _buildPaymentOption(
+              context,
+              'Cartão de Débito',
+              Icons.credit_card_off,
+            ),
+
+            _buildPaymentOption(
+              context,
+              'PIX',
+              Icons.qr_code_2,
+              onTap: () => _showPixQrCode(context),
+            ),
+          ],
+        ),
+      ),
+
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, -2))],
+        ),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () {
+              _showOrderConfirmation(context);
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primaryColor,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+              elevation: 0,
+            ),
+            child: const Text(
+              'Finalizar',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentOption(BuildContext context, String title, IconData icon,
+      {VoidCallback? onTap}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Card(
+        color: _cardColor,
+        elevation: 0.5,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+        child: InkWell(
+          onTap: onTap ??
+              () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Forma de Pagamento selecionada: $title'),
+                    backgroundColor: _primaryColor,
+                  ),
+                );
+              },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: _primaryColor, size: 24),
+                const SizedBox(width: 10),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showOrderConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Pedido Finalizado!'),
+        content:
+            Text('Seu pedido no valor de R\$ ${widget.total.toStringAsFixed(2)} foi enviado com sucesso.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+            child: const Text('OK', style: TextStyle(color: _primaryColor)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 🚀 QR CODE FIXO DO PIX
+  void _showPixQrCode(BuildContext context) {
+    final valor = widget.total.toStringAsFixed(2);
+
+    // Cole sua chave PIX aqui:
+    const chavePix = "seu_email_ou_cpf_ou_chave_aleatoria";
+
+    // Código BR Code PIX fixo
+    final String qrCodePix =
+        "00020126580014BR.GOV.BCB.PIX0136$chavePix5204000053039865406$valor5802BR5910EcoFood6009SAO PAULO62070503***6304ABCD";
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("PIX - QR Code"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            QrImageView(
+              data: qrCodePix,
+              version: QrVersions.auto,
+              size: 220,
+            ),
+            const SizedBox(height: 10),
+            Text("Valor: R\$ $valor"),
+            const Text("Escaneie o QR Code para pagar."),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Fechar", style: TextStyle(color: _primaryColor)),
+          )
+        ],
       ),
     );
   }

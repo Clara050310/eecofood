@@ -4,6 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:ecofood/screens/tela_produtos_cliente.dart';
 import 'package:ecofood/screens/tela_registro.dart';
+import 'package:ecofood/screens/tela_esqueci_senha.dart';
 
 class TelaLogin extends StatefulWidget {
   @override
@@ -15,7 +16,8 @@ class _TelaLoginState extends State<TelaLogin> {
   final _senhaController = TextEditingController();
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn =
+      GoogleSignIn(scopes: ["email"]); // ← IMPORTANTE
 
   // LOGIN EMAIL/SENHA
   Future<void> _loginEmailSenha() async {
@@ -36,30 +38,37 @@ class _TelaLoginState extends State<TelaLogin> {
     }
   }
 
-  // LOGIN GOOGLE (FUNCIONANDO)
+  // LOGIN GOOGLE
   Future<void> _loginGoogle() async {
     try {
-      final GoogleSignInAccount? userGoogle = await _googleSignIn.signIn();
-      if (userGoogle == null) return;
+      // 1 - abrir pop-up de login
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) return;
 
+      // 2 - pegar tokens
       final GoogleSignInAuthentication googleAuth =
-          await userGoogle.authentication;
+          await googleUser.authentication;
 
+      // 3 - converter credenciais para o Firebase
       final credential = GoogleAuthProvider.credential(
-        idToken: googleAuth.idToken,
         accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
       );
 
+      // 4 - logar no Firebase
       await FirebaseAuth.instance.signInWithCredential(credential);
 
+      // 5 - ir para a tela principal
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => TelaProdutosCliente()),
       );
     } catch (e) {
-      print("ERRO GOOGLE: $e");
+      print("ERRO LOGIN GOOGLE: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erro ao entrar com Google")),
+        SnackBar(
+          content: Text("Erro ao entrar com o Google, verifique o Firebase."),
+        ),
       );
     }
   }
@@ -72,7 +81,7 @@ class _TelaLoginState extends State<TelaLogin> {
         height: double.infinity,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF4CAF50), Colors.white],
+            colors: [Color(0xFF8B0000), Colors.white],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),
@@ -84,18 +93,36 @@ class _TelaLoginState extends State<TelaLogin> {
               padding: EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black12,
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
+                    blurRadius: 6,
+                    spreadRadius: 2,
                   ),
                 ],
               ),
               child: Column(
                 children: [
-                  // BOTÃO GOOGLE
+                  Image.asset(
+                    'assets/logo_ecofood.png',
+                    height: 100,
+                    errorBuilder: (ctx, error, stack) {
+                      return Column(
+                        children: [
+                          Icon(Icons.error, color: Colors.red, size: 40),
+                          Text(
+                            "Erro ao carregar a logo",
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+
+                  SizedBox(height: 24),
+
+                  // BOTÃO GOOGLE FUNCIONAL
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
@@ -103,19 +130,29 @@ class _TelaLoginState extends State<TelaLogin> {
                       style: OutlinedButton.styleFrom(
                         padding: EdgeInsets.symmetric(vertical: 12),
                         side: BorderSide(color: Colors.grey.shade400),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(5),
+                        ),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.account_circle, color: Colors.red),
+                          Icon(Icons.g_mobiledata,
+                              color: Colors.blue, size: 30),
                           SizedBox(width: 10),
-                          Text("Entrar com Google"),
+                          Text(
+                            "Continuar com o Google",
+                            style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold),
+                          ),
                         ],
                       ),
                     ),
                   ),
 
                   SizedBox(height: 18),
+
                   Row(
                     children: [
                       Expanded(child: Divider()),
@@ -126,9 +163,9 @@ class _TelaLoginState extends State<TelaLogin> {
                       Expanded(child: Divider()),
                     ],
                   ),
+
                   SizedBox(height: 18),
 
-                  // EMAIL
                   TextField(
                     controller: _emailController,
                     decoration: InputDecoration(
@@ -138,7 +175,6 @@ class _TelaLoginState extends State<TelaLogin> {
                   ),
                   SizedBox(height: 12),
 
-                  // SENHA
                   TextField(
                     controller: _senhaController,
                     obscureText: true,
@@ -147,26 +183,39 @@ class _TelaLoginState extends State<TelaLogin> {
                       border: OutlineInputBorder(),
                     ),
                   ),
-                  SizedBox(height: 8),
 
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {},
-                      child: Text("Esqueci minha senha"),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => TelaEsqueciSenha()),
+                        );
+                      },
+                      child: Text(
+                        "Esqueci minha senha",
+                        style: TextStyle(
+                          color: Colors.blue,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
                     ),
                   ),
 
                   SizedBox(height: 12),
 
-                  // BOTÃO ENTRAR
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _loginEmailSenha,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
+                        backgroundColor: Color(0xFF8B0000),
                         padding: EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(5),
+                        ),
                       ),
                       child: Text(
                         "Entrar",
@@ -187,11 +236,20 @@ class _TelaLoginState extends State<TelaLogin> {
                         MaterialPageRoute(builder: (_) => TelaRegistro()),
                       );
                     },
-                    child: Text(
-                      "Não tem conta? Crie uma agora",
-                      style: TextStyle(
-                        color: Colors.blue,
-                        decoration: TextDecoration.underline,
+                    child: Text.rich(
+                      TextSpan(
+                        text: "Não tem uma conta? ",
+                        style: TextStyle(color: Colors.black),
+                        children: [
+                          TextSpan(
+                            text: "Registre-se",
+                            style: TextStyle(
+                              color: Colors.blue,
+                              decoration: TextDecoration.underline,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   )

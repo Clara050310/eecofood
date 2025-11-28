@@ -3,6 +3,10 @@ import '../models/cart_item.dart';
 import '../services/local_storage_service.dart';
 import 'tela_pagamento.dart';
 
+// 🎨 CORES DO PROTÓTIPO
+const Color _primaryColor = Color(0xFFC0392B); // Vermelho Escuro (Botões, AppBar)
+const Color _backgroundColor = Color(0xFFF5F5F5); // Fundo Cinza Claro
+
 class TelaCarrinho extends StatefulWidget {
   @override
   _TelaCarrinhoState createState() => _TelaCarrinhoState();
@@ -53,6 +57,8 @@ class _TelaCarrinhoState extends State<TelaCarrinho> {
 
   double get totalPrice => cart.fold(0, (sum, item) => sum + item.totalPrice);
 
+  double get finalTotal => totalPrice + (totalPrice > 50 ? 0 : 5);
+
   String formatDate(String date) {
     final d = DateTime.parse(date);
     return "${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}";
@@ -61,23 +67,23 @@ class _TelaCarrinhoState extends State<TelaCarrinho> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: _backgroundColor,
 
+      //  appBar Fiel ao Protótipo (Cor e Título Centralizado)
       appBar: AppBar(
-        backgroundColor: const Color(0xFF4CAF50),
+        backgroundColor: _primaryColor,
         elevation: 0,
+        centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Row(
+        title: Column(
           children: [
-            Image.asset('assets/logo.png', width: 35, height: 35),
-            const SizedBox(width: 10),
-            const Text("Carrinho", style: TextStyle(fontSize: 22)),
+            const Text("Eco Food", style: TextStyle(fontSize: 16, color: Colors.white)),
+            const Text("Carrinho", style: TextStyle(fontSize: 22, color: Colors.white, fontWeight: FontWeight.bold)),
           ],
         ),
-
         actions: [
           if (cart.isNotEmpty)
             IconButton(
@@ -106,19 +112,12 @@ class _TelaCarrinhoState extends State<TelaCarrinho> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Adicione produtos para começar!',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade500,
-                    ),
-                  ),
                 ],
               ),
             )
           : Column(
               children: [
+                // Lista de Itens do Carrinho
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
@@ -126,45 +125,37 @@ class _TelaCarrinhoState extends State<TelaCarrinho> {
                     itemBuilder: (context, index) {
                       final item = cart[index];
 
+                      // 📦 Card de Item de Produto (Fiel ao Protótipo)
                       return Card(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        elevation: 6,
-                        shadowColor: const Color(0xFF4CAF50).withOpacity(0.2),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        elevation: 1, // Baixa elevação como no protótipo
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(5), // Cantos pouco arredondados
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(12),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               // IMAGEM
                               Container(
+                                width: 60,
+                                height: 60,
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: Colors.grey.shade300, width: 0.5),
                                 ),
                                 child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(4),
                                   child: Image.network(
                                     item.product.imageUrl,
-                                    width: 80,
-                                    height: 80,
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, __, ___) =>
                                         Container(
-                                          width: 80,
-                                          height: 80,
                                           color: Colors.grey.shade200,
                                           child: const Icon(
                                             Icons.image_not_supported,
-                                            size: 40,
+                                            size: 30,
                                             color: Colors.grey,
                                           ),
                                         ),
@@ -172,117 +163,118 @@ class _TelaCarrinhoState extends State<TelaCarrinho> {
                                 ),
                               ),
 
-                              const SizedBox(width: 16),
+                              const SizedBox(width: 12),
 
-                              // DADOS DO PRODUTO
+                              // DADOS DO PRODUTO (Nome, Validade, Valor, Quantidade)
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    // Produto (Nome)
                                     Text(
                                       item.product.name,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
                                         color: Colors.black87,
                                       ),
                                     ),
-
+                                    
                                     const SizedBox(height: 4),
-
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.calendar_today,
-                                          size: 14,
-                                          color: Colors.grey,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          "Validade: ${formatDate(item.product.validity)}",
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-
-                                    const SizedBox(height: 8),
-
+                                    
+                                    // Validade
                                     Text(
-                                      "R\$ ${item.product.price.toStringAsFixed(2)}",
+                                      "Validade: ${formatDate(item.product.validity)}",
                                       style: const TextStyle(
-                                        fontSize: 16,
-                                        color: Color(0xFF4CAF50),
-                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        color: Colors.grey,
                                       ),
                                     ),
-
+                                    
                                     const SizedBox(height: 4),
 
+                                    // Valor
                                     Text(
-                                      "Subtotal: R\$ ${item.totalPrice.toStringAsFixed(2)}",
-                                      style: TextStyle(
+                                      "Valor: R\$ ${item.product.price.toStringAsFixed(2)}",
+                                      style: const TextStyle(
                                         fontSize: 14,
-                                        color: Colors.grey.shade600,
-                                        fontWeight: FontWeight.w500,
+                                        color: Colors.black87,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
 
-                              // BOTÕES DE QUANTIDADE
+                              // Botões de Quantidade e Exclusão (Simulando o 'X' do protótipo)
                               Column(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade100,
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.remove,
-                                            color: Color(0xFF4CAF50),
-                                          ),
-                                          onPressed: () => _decreaseQty(index),
-                                          iconSize: 20,
-                                        ),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                                          child: Text(
-                                            "${item.quantity}",
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.black87,
-                                            ),
-                                          ),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.add,
-                                            color: Color(0xFF4CAF50),
-                                          ),
-                                          onPressed: () => _increaseQty(index),
-                                          iconSize: 20,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  const SizedBox(height: 8),
-
+                                  // Botão de Excluir (Simulando o 'X')
                                   IconButton(
                                     icon: const Icon(
-                                      Icons.delete_outline,
-                                      color: Colors.red,
+                                      Icons.close, // Usa um ícone 'X' para ser fiel ao protótipo
+                                      color: _primaryColor, 
+                                      size: 24,
                                     ),
                                     onPressed: () => _removeItem(index),
                                     tooltip: 'Remover item',
+                                  ),
+                                  
+                                  // Contador de Quantidade
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      // Botão Subtrair
+                                      SizedBox(
+                                        width: 30,
+                                        height: 30,
+                                        child: IconButton(
+                                          padding: EdgeInsets.zero,
+                                          icon: Icon(Icons.remove, size: 16, color: item.quantity > 1 ? _primaryColor : Colors.grey),
+                                          onPressed: () => _decreaseQty(index),
+                                        ),
+                                      ),
+                                      
+                                      // Quantidade
+                                      Container(
+                                        width: 25,
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          "${item.quantity}",
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                      
+                                      // Botão Adicionar
+                                      SizedBox(
+                                        width: 30,
+                                        height: 30,
+                                        child: IconButton(
+                                          padding: EdgeInsets.zero,
+                                          icon: const Icon(Icons.add, size: 16, color: _primaryColor),
+                                          onPressed: () => _increaseQty(index),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  
+                                  const SizedBox(height: 8),
+
+                                  // Subtotal
+                                  Text(
+                                    "R\$ ${item.totalPrice.toStringAsFixed(2)}",
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: _primaryColor,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -294,140 +286,102 @@ class _TelaCarrinhoState extends State<TelaCarrinho> {
                   ),
                 ),
 
-                // RESUMO DO CARRINHO
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Subtotal',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          Text(
-                            'R\$ ${totalPrice.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Frete',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          Text(
-                            totalPrice > 50 ? 'Grátis' : 'R\$ 5,00',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: totalPrice > 50 ? Colors.green : Colors.black87,
-                              fontWeight: totalPrice > 50 ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Divider(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Total',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          Text(
-                            'R\$ ${(totalPrice + (totalPrice > 50 ? 0 : 5)).toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF4CAF50),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                // 💰 Rodapé: Total + Botão Finalizar
+                _buildTotalFooter(context),
               ],
             ),
+    );
+  }
 
-      // RODAPÉ TOTAL + FINALIZAR
-      bottomNavigationBar: cart.isEmpty
-          ? null
-          : Container(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 8,
-                    offset: Offset(0, -2),
-                  ),
-                ],
+  // Widget Separado para o Rodapé do Carrinho
+  Widget _buildTotalFooter(BuildContext context) {
+    // Definindo as regras de frete
+    final double shippingCost = totalPrice > 50 ? 0.00 : 5.00;
+    final String shippingText = totalPrice > 50 ? 'Grátis' : 'R\$ 2,00';
+    final Color shippingColor = totalPrice > 50 ? Colors.green : Colors.black87;
+    final double finalTotal = totalPrice + shippingCost;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 8,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Subtotal
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Subtotal:', style: TextStyle(fontSize: 16, color: Colors.grey)),
+              Text('R\$ ${totalPrice.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, color: Colors.black87)),
+            ],
+          ),
+          const SizedBox(height: 4),
+
+          // Frete
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Frete:', style: TextStyle(fontSize: 16, color: Colors.grey)),
+              Text(
+                shippingText,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: shippingColor,
+                  fontWeight: totalPrice > 50 ? FontWeight.bold : FontWeight.normal,
+                ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Total: R\$ ${totalPrice.toStringAsFixed(2)}",
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF4CAF50),
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => TelaPagamento(total: totalPrice + (totalPrice > 50 ? 0 : 5))),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4CAF50),
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 30, vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                    ),
-                    child: const Text(
-                      'Finalizar',
-                      style: TextStyle(fontSize: 18, color: Colors.white),
-                    ),
-                  )
-                ],
+            ],
+          ),
+          const Divider(height: 16),
+
+          // Total Final
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Total Final:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
+              Text(
+                'R\$ ${finalTotal.toStringAsFixed(2)}',
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _primaryColor),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          
+          // Botão Finalizar (Fiel ao Protótipo)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => TelaPagamento(total: finalTotal)),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primaryColor,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(5), // Pouco arredondado
+                ),
+                elevation: 0,
+              ),
+              child: const Text(
+                'Finalizar',
+                style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
+          ),
+        ],
+      ),
     );
   }
 }
