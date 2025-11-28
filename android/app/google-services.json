@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "579927974676",
+    "project_id": "ecofood-dec54",
+    "storage_bucket": "ecofood-dec54.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:579927974676:android:a4593747fd3a19d8089801",
+        "android_client_info": {
+          "package_name": "com.example.ecofood"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "579927974676-qlc66mb1qf5a8a5hogkfu4buak94scf2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCCv1Gb8GNbFbo76BtDOB7II0w4mq9NYyo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "579927974676-qlc66mb1qf5a8a5hogkfu4buak94scf2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
