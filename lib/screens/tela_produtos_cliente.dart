@@ -300,7 +300,7 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
                     context,
                     MaterialPageRoute(
                         builder: (_) =>
-                            TelaAcompanharPedido(pedidoId: '', status: '')));
+                            TelaAcompanharPedido(pedidoId: '')));
               },
             ),
           ],
@@ -403,7 +403,7 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
                       context,
                       MaterialPageRoute(
                           builder: (_) =>
-                              TelaAcompanharPedido(pedidoId: '', status: '')));
+                              TelaAcompanharPedido(pedidoId: '')));
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _secondaryColor, // Cinza

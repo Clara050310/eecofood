@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import '../services/local_storage_service.dart';
-import '../models/user.dart';
-import 'tela_login.dart';
-import 'tela_produtos_cliente.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+
+import 'tela_login.dart';
+import 'tela_produtos_cliente.dart';
 
 class TelaRegistro extends StatefulWidget {
   @override
@@ -14,19 +13,17 @@ class TelaRegistro extends StatefulWidget {
 class _TelaRegistroState extends State<TelaRegistro> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _localStorage = LocalStorageService();
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
-  /// 🔹 Agora o GoogleSignIn está correto!
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-  /// 🔹 Registro com email e senha
-  void _register() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+  bool _erroLogo = false;
 
-    if (email.isEmpty || password.isEmpty) {
+  Future<void> _register() async {
+    final email = _emailController.text.trim();
+    final pass = _passwordController.text.trim();
+
+    if (email.isEmpty || pass.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Preencha todos os campos')),
       );
@@ -34,7 +31,11 @@ class _TelaRegistroState extends State<TelaRegistro> {
     }
 
     try {
-      await _auth.createUserWithEmailAndPassword(email: email, password: password);
+      await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: pass,
+      );
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Cadastro realizado com sucesso!')),
       );
@@ -45,39 +46,32 @@ class _TelaRegistroState extends State<TelaRegistro> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro no cadastro: $e')),
+        SnackBar(content: Text('Erro ao cadastrar: $e')),
       );
     }
   }
 
-  /// 🔹 Registro/Login com Google
   Future<void> _registerWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return; // usuário cancelou
+      final user = await _googleSignIn.signIn();
+      if (user == null) return;
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      final auth = await user.authentication;
 
       final credential = GoogleAuthProvider.credential(
-        idToken: googleAuth.idToken,
-        accessToken: googleAuth.accessToken,
+        idToken: auth.idToken,
+        accessToken: auth.accessToken,
       );
 
-      await _auth.signInWithCredential(credential);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cadastro/Login com Google realizado!')),
-      );
+      await FirebaseAuth.instance.signInWithCredential(credential);
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => TelaProdutosCliente()),
       );
     } catch (e) {
-      print("Erro no registro com Google: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao cadastrar com Google')),
+        SnackBar(content: Text('Erro ao entrar com Google')),
       );
     }
   }
@@ -88,31 +82,54 @@ class _TelaRegistroState extends State<TelaRegistro> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
+
+        /// 🔥 GRADIENTE IGUAL AO DA IMAGEM
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF4CAF50), Colors.white],
+            colors: [
+              Color(0xFF8B0000),
+              Color(0xFFFFF2F2),
+            ],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),
         ),
+
         child: Center(
           child: SingleChildScrollView(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo
+                /// LOGO
                 Column(
                   children: [
-                    Image.asset(
-                      'assets/logo.png',
-                      width: 120,
-                      height: 120,
-                    ),
-                    SizedBox(height: 32),
+                    _erroLogo
+                        ? Column(
+                            children: [
+                              Icon(Icons.error, color: Colors.red, size: 40),
+                              SizedBox(height: 4),
+                              Text(
+                                "Erro ao carregar a logo",
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 14,
+                                ),
+                              )
+                            ],
+                          )
+                        : Image.asset(
+                            "assets/logo.png",
+                            width: 120,
+                            height: 120,
+                            errorBuilder: (_, __, ___) {
+                              setState(() => _erroLogo = true);
+                              return SizedBox();
+                            },
+                          ),
+                    SizedBox(height: 20),
                   ],
                 ),
 
-                // Caixa branca
+                /// CARD BRANCO CENTRAL
                 Container(
                   width: 340,
                   padding: EdgeInsets.all(24),
@@ -121,23 +138,22 @@ class _TelaRegistroState extends State<TelaRegistro> {
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 4,
-                        offset: Offset(0, 2),
-                      ),
+                        blurRadius: 6,
+                        color: Colors.black26,
+                      )
                     ],
                   ),
+
                   child: Column(
                     children: [
-                      // Botão Google
+                      /// GOOGLE BUTTON
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
                           onPressed: _registerWithGoogle,
                           icon: Image.network(
-                            'https://developers.google.com/identity/images/g-logo.png',
+                            "https://developers.google.com/identity/images/g-logo.png",
                             width: 20,
-                            height: 20,
                           ),
                           label: Text("Continuar com o Google"),
                           style: OutlinedButton.styleFrom(
@@ -146,14 +162,15 @@ class _TelaRegistroState extends State<TelaRegistro> {
                           ),
                         ),
                       ),
+
                       SizedBox(height: 16),
 
-                      // Separador
+                      /// SEPARADOR
                       Row(
                         children: [
                           Expanded(child: Divider(color: Colors.grey.shade400)),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            padding: EdgeInsets.symmetric(horizontal: 8),
                             child: Text(
                               "Ou",
                               style: TextStyle(color: Colors.grey.shade600),
@@ -165,13 +182,12 @@ class _TelaRegistroState extends State<TelaRegistro> {
 
                       SizedBox(height: 16),
 
-                      // Campos
+                      /// CAMPOS DE EMAIL E SENHA
                       TextField(
                         controller: _emailController,
                         decoration: InputDecoration(
-                          labelText: 'Email',
+                          labelText: "Email",
                           border: OutlineInputBorder(),
-                          isDense: true,
                         ),
                       ),
                       SizedBox(height: 12),
@@ -179,27 +195,24 @@ class _TelaRegistroState extends State<TelaRegistro> {
                         controller: _passwordController,
                         obscureText: true,
                         decoration: InputDecoration(
-                          labelText: 'Senha',
+                          labelText: "Senha",
                           border: OutlineInputBorder(),
-                          isDense: true,
                         ),
                       ),
+
                       SizedBox(height: 20),
 
-                      // Botão registrar
+                      /// BOTÃO REGISTRAR (VERMELHO)
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: _register,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red.shade700,
+                            backgroundColor: Color(0xFF8B0000),
                             padding: EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
                           ),
                           child: Text(
-                            'Criar conta',
+                            "Criar conta",
                             style: TextStyle(
                               fontSize: 16,
                               color: Colors.white,
@@ -211,7 +224,7 @@ class _TelaRegistroState extends State<TelaRegistro> {
 
                       SizedBox(height: 12),
 
-                      // Link login
+                      /// LINK LOGIN
                       GestureDetector(
                         onTap: () {
                           Navigator.pushReplacement(
@@ -220,7 +233,7 @@ class _TelaRegistroState extends State<TelaRegistro> {
                           );
                         },
                         child: Text(
-                          "Já tem uma conta? Faça o login",
+                          "Já tem uma conta? Faça login",
                           style: TextStyle(
                             color: Colors.blue,
                             decoration: TextDecoration.underline,

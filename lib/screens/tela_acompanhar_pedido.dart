@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class TelaAcompanharPedido extends StatefulWidget {
   final String pedidoId;
 
-  const TelaAcompanharPedido({super.key, required this.pedidoId, required String status});
+  const TelaAcompanharPedido({super.key, required this.pedidoId});
 
   @override
   State<TelaAcompanharPedido> createState() => _TelaAcompanharPedidoState();
@@ -13,28 +13,41 @@ class TelaAcompanharPedido extends StatefulWidget {
 class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
   final TextEditingController _msgController = TextEditingController();
 
-  String _metodoEntrega = "delivery"; // padrão
+  String _metodoEntrega = "delivery";
 
   @override
   void initState() {
     super.initState();
+
+    // 🚨 Proteção contra pedidoId vazio
+    if (widget.pedidoId.isEmpty) {
+      print("ERRO: pedidoId está vazio!");
+      return;
+    }
+
     _carregarMetodoEntrega();
   }
 
+  // 🔹 Carrega método de entrega com verificação
   Future<void> _carregarMetodoEntrega() async {
+    if (widget.pedidoId.isEmpty) return;
+
     final pedido = await FirebaseFirestore.instance
         .collection("pedidos")
         .doc(widget.pedidoId)
         .get();
 
-    if (pedido.exists && pedido.data()!.containsKey('metodoEntrega')) {
+    if (pedido.exists) {
       setState(() {
-        _metodoEntrega = pedido['metodoEntrega'];
+        _metodoEntrega = pedido.data()?['metodoEntrega'] ?? "delivery";
       });
     }
   }
 
+  // 🔹 Atualiza método de entrega com segurança
   Future<void> _alterarMetodoEntrega(String metodo) async {
+    if (widget.pedidoId.isEmpty) return;
+
     await FirebaseFirestore.instance
         .collection("pedidos")
         .doc(widget.pedidoId)
@@ -45,17 +58,21 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
     });
   }
 
+  // 🔹 Envia mensagem com proteção
   Future<void> _enviarMensagem() async {
-    if (_msgController.text.trim().isEmpty) return;
+    if (widget.pedidoId.isEmpty) return;
+
+    final texto = _msgController.text.trim();
+    if (texto.isEmpty) return;
 
     await FirebaseFirestore.instance
         .collection("pedidos")
         .doc(widget.pedidoId)
         .collection("chat")
         .add({
-      "texto": _msgController.text,
+      "texto": texto,
       "autor": "cliente",
-      "timestamp": FieldValue.serverTimestamp()
+      "timestamp": FieldValue.serverTimestamp(),
     });
 
     _msgController.clear();
@@ -63,6 +80,19 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
 
   @override
   Widget build(BuildContext context) {
+    // 🚨 Falha crítica → impede crash
+    if (widget.pedidoId.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: Text("Acompanhar Pedido")),
+        body: Center(
+          child: Text(
+            "Erro: pedidoId não foi fornecido.",
+            style: TextStyle(fontSize: 18, color: Colors.red),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Acompanhar Pedido"),
@@ -71,9 +101,9 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
 
       body: Column(
         children: [
-          // -------------------------------
-          //         STATUS + ENTREGA
-          // -------------------------------
+          // -------------------------------------------------------------------
+          // CABEÇALHO
+          // -------------------------------------------------------------------
           Container(
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -88,17 +118,14 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
 
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
 
-                // -------------------------------
-                //       MÉTODO DE ENTREGA
-                // -------------------------------
                 Text(
                   "Método de Entrega:",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
 
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
 
                 Row(
                   children: [
@@ -110,7 +137,7 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
                     ),
                     SizedBox(width: 12),
                     ChoiceChip(
-                      label: Text("Retirar no Local"),
+                      label: Text("Retirada"),
                       selected: _metodoEntrega == "retirada",
                       onSelected: (_) => _alterarMetodoEntrega("retirada"),
                       selectedColor: Colors.green,
@@ -130,7 +157,8 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
                       return Text("Carregando status...");
                     }
 
-                    String status = snapshot.data!["status"] ?? "Preparando";
+                    String status =
+                        snapshot.data?.get("status") ?? "Preparando";
 
                     return Row(
                       children: [
@@ -148,9 +176,9 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
             ),
           ),
 
-          // -------------------------------
-          //              CHAT
-          // -------------------------------
+          // -------------------------------------------------------------------
+          // CHAT
+          // -------------------------------------------------------------------
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -166,20 +194,32 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
 
                 final mensagens = snapshot.data!.docs;
 
+                if (mensagens.isEmpty) {
+                  return Center(
+                    child: Text(
+                      "Nenhuma mensagem ainda...",
+                      style: TextStyle(color: Colors.grey, fontSize: 16),
+                    ),
+                  );
+                }
+
                 return ListView(
                   reverse: true,
                   padding: EdgeInsets.all(12),
                   children: mensagens.map((msg) {
                     bool souEu = msg["autor"] == "cliente";
                     return Align(
-                      alignment:
-                          souEu ? Alignment.centerRight : Alignment.centerLeft,
+                      alignment: souEu
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
                       child: Container(
                         margin: EdgeInsets.symmetric(vertical: 4),
-                        padding:
-                            EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                        padding: EdgeInsets.symmetric(
+                            vertical: 10, horizontal: 14),
                         decoration: BoxDecoration(
-                          color: souEu ? Colors.green : Colors.grey.shade300,
+                          color: souEu
+                              ? Colors.green
+                              : Colors.grey.shade300,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -197,9 +237,9 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
             ),
           ),
 
-          // -------------------------------
-          //     CAIXA DE ENVIAR MENSAGEM
-          // -------------------------------
+          // -------------------------------------------------------------------
+          // CAMPO DE MENSAGEM
+          // -------------------------------------------------------------------
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             color: Colors.white,
@@ -228,7 +268,7 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
                 ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );

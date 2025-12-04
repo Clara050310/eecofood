@@ -110,7 +110,7 @@ class MyApp extends StatelessWidget {
         '/registro': (context) => TelaRegistro(),
         '/produtos': (context) => TelaProdutosCliente(),
         '/carrinho': (context) => TelaCarrinho(),
-        '/acompanhar-pedido': (context) => TelaAcompanharPedido(pedidoId: '', status: '',),
+        '/acompanhar-pedido': (context) => TelaAcompanharPedido(pedidoId: ''),
       },
     );
   }
