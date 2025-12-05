@@ -1,4 +1,4 @@
- import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class TelaRedefinirSenha extends StatefulWidget {
@@ -7,181 +7,127 @@ class TelaRedefinirSenha extends StatefulWidget {
 }
 
 class _TelaRedefinirSenhaState extends State<TelaRedefinirSenha> {
-  final _codeController = TextEditingController();
-  final _newPasswordController = TextEditingController();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final TextEditingController _emailController = TextEditingController();
+  bool _loading = false;
 
-  Future<void> _redefinirSenha() async {
-    if (_codeController.text.trim().isEmpty || _newPasswordController.text.trim().isEmpty) {
+  Future<void> _enviarLink() async {
+    final email = _emailController.text.trim();
+
+    if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Por favor, preencha todos os campos")),
+        SnackBar(content: Text("Digite seu e-mail!")),
       );
       return;
     }
 
     try {
-      await _auth.confirmPasswordReset(
-        code: _codeController.text.trim(),
-        newPassword: _newPasswordController.text.trim(),
-      );
+      setState(() => _loading = true);
+
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Senha redefinida com sucesso!")),
+        SnackBar(content: Text("Link enviado! Verifique seu e-mail.")),
       );
-      Navigator.popUntil(context, (route) => route.isFirst); // Voltar para a tela inicial
+
+      Navigator.pop(context);
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erro ao redefinir senha: ${e.toString()}")),
+        SnackBar(content: Text("Erro ao enviar link: $e")),
       );
+    } finally {
+      setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: Text("Redefinir senha"),
-        backgroundColor: Color(0xFF8B0000),
-        foregroundColor: Colors.white,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+        title: Text(
+          "Redefinir Senha",
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
+        backgroundColor: Color(0xFFC0392B), // Cor do EcoFood
+        centerTitle: true,
+        elevation: 0,
       ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF8B0000), Colors.white],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            child: Container(
-              width: 340,
-              padding: EdgeInsets.all(24),
+
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+
+            SizedBox(height: 20),
+
+            Text(
+              "Digite seu e-mail abaixo para receber um link de redefinição de senha.",
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[800],
+              ),
+            ),
+
+            SizedBox(height: 30),
+
+            // Campo de e-mail estilizado
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 15),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black12,
-                    blurRadius: 6,
-                    spreadRadius: 2,
-                  ),
+                    blurRadius: 5,
+                    offset: Offset(0, 3),
+                  )
                 ],
               ),
-              child: Column(
-                children: [
-                  // LOGO
-                  Image.asset(
-                    'assets/logo_ecofood.png',
-                    height: 100,
-                    errorBuilder: (ctx, error, stack) {
-                      return Column(
-                        children: [
-                          Icon(Icons.error, color: Colors.red, size: 40),
-                          Text(
-                            "Erro ao carregar a logo",
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        ],
-                      );
-                    },
+              child: TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  labelText: "E-mail",
+                  labelStyle: TextStyle(color: Colors.grey),
+                  icon: Icon(Icons.email_outlined, color: Color(0xFFC0392B)),
+                ),
+              ),
+            ),
+
+            SizedBox(height: 40),
+
+            // Botão estilizado
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton(
+                onPressed: _loading ? null : _enviarLink,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFFC0392B),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
-
-                  SizedBox(height: 24),
-
-                  Text(
-                    "Redefinir senha",
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-
-                  SizedBox(height: 16),
-
-                  Text(
-                    "Digite o código do email e sua nova senha.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-
-                  SizedBox(height: 24),
-
-                  // CÓDIGO
-                  TextField(
-                    controller: _codeController,
-                    decoration: InputDecoration(
-                      labelText: "Código do email",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-
-                  SizedBox(height: 12),
-
-                  // NOVA SENHA
-                  TextField(
-                    controller: _newPasswordController,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      labelText: "Nova senha",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-
-                  SizedBox(height: 24),
-
-                  // BOTÃO REDEFINIR
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _redefinirSenha,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF8B0000),
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                      ),
-                      child: Text(
-                        "Redefinir senha",
+                  elevation: 4,
+                ),
+                child: _loading
+                    ? CircularProgressIndicator(
+                        color: Colors.white,
+                      )
+                    : Text(
+                        "Enviar link",
                         style: TextStyle(
-                          color: Colors.white,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                  ),
-
-                  SizedBox(height: 16),
-
-                  // VOLTAR
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: Text(
-                      "Voltar",
-                      style: TextStyle(
-                        color: Colors.blue,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

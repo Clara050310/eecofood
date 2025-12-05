@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import '../models/product.dart'; // Certifique-se de que esta classe está atualizada!
+import '../models/product.dart';
 import '../models/cart_item.dart';
 import '../services/local_storage_service.dart';
 import 'tela_carrinho.dart';
 import 'tela_acompanhar_pedido.dart';
 
 // CORES DO PROTÓTIPO
-const Color _primaryColor = Color(0xFFC0392B); // Vermelho da imagem (Carrinho/Desconto)
-const Color _secondaryColor = Color(0xFF808080); // Cinza (Botão Pedidos)
+const Color _primaryColor = Color(0xFFC0392B); // Vermelho
+const Color _secondaryColor = Color(0xFF808080); // Cinza
 const Color _backgroundColor = Color(0xFFF5F5F5);
 
 class TelaProdutosCliente extends StatefulWidget {
@@ -19,10 +19,9 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
   final LocalStorageService _localStorage = LocalStorageService();
   final TextEditingController _searchController = TextEditingController();
 
-  // Nomes de arquivo das imagens carregadas.
-  // IMPORTANTE: Essas strings são as referências que o sistema usa para acessar as imagens.
-  static const String _fuginiImage = 'image_f1578e.png';
-  static const String _basilarImage = 'image_f0f95e.png';
+  // Caminhos reais das imagens dentro de assets/images/
+  static const String _fuginiImage = 'assets/images/image_f1578e.png';
+  static const String _basilarImage = 'assets/images/image_f0f95e.png';
 
   List<Product> products = [
     Product(
@@ -30,7 +29,6 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
       name: 'Molho Tomate Fugini 300g Sachê Tradicional',
       price: 1.39,
       originalPrice: 2.25,
-      // Usando a referência da imagem carregada
       imageUrl: _fuginiImage,
       validity: '2023-12-15',
     ),
@@ -39,7 +37,6 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
       name: 'Macarrão Semolado Basilar Parafuso 500g',
       price: 3.55,
       originalPrice: 3.55,
-      // Usando a referência da imagem carregada
       imageUrl: _basilarImage,
       validity: '2023-12-10',
     ),
@@ -48,7 +45,6 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
       name: 'Molho Tomate Fugini 300g Sachê Tradicional',
       price: 1.39,
       originalPrice: 2.25,
-      // Usando a referência da imagem carregada
       imageUrl: _fuginiImage,
       validity: '2023-12-20',
     ),
@@ -57,7 +53,6 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
       name: 'Macarrão Semolado Basilar Parafuso 500g',
       price: 3.55,
       originalPrice: 3.55,
-      // Usando a referência da imagem carregada
       imageUrl: _basilarImage,
       validity: '2023-12-12',
     ),
@@ -66,7 +61,6 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
       name: 'Molho Tomate Fugini 300g Sachê Tradicional',
       price: 1.39,
       originalPrice: 2.25,
-      // Usando a referência da imagem carregada
       imageUrl: _fuginiImage,
       validity: '2023-12-15',
     ),
@@ -75,7 +69,6 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
       name: 'Macarrão Semolado Basilar Parafuso 500g',
       price: 3.55,
       originalPrice: 3.55,
-      // Usando a referência da imagem carregada
       imageUrl: _basilarImage,
       validity: '2023-12-10',
     ),
@@ -128,12 +121,6 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
     );
   }
 
-  String formatDate(String date) {
-    DateTime d = DateTime.parse(date);
-    return "${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}";
-  }
-
-  // Novo Widget para carregar o Cartão do Produto
   Widget _buildProductCard(Product product) {
     final bool hasDiscount =
         product.originalPrice != null && product.price < product.originalPrice!;
@@ -144,41 +131,35 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 🖼️ Imagem do Produto
+          // ---------- IMAGEM DO PRODUTO ----------
           Container(
             height: 120,
-            decoration: BoxDecoration(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(5)),
-            ),
             child: Stack(
               children: [
-                // Usando Image.asset (ou Image.file/Image.network se necessário)
-                // Usaremos **Image.network** com a URL fornecida pelo sistema para o arquivo local.
-                Image.network(
-                  product.imageUrl, // A URL real será resolvida pelo sistema
+                Image.asset(
+                  product.imageUrl,
                   fit: BoxFit.cover,
-                  alignment: Alignment.center,
+                  width: double.infinity,
                   errorBuilder: (context, error, stackTrace) => const Center(
                     child: Icon(Icons.broken_image, color: Colors.grey),
                   ),
                 ),
-                // 🏷️ Selo de Desconto
+
                 if (hasDiscount)
                   Align(
                     alignment: Alignment.topLeft,
                     child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      margin: const EdgeInsets.only(top: 8, left: 0),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      margin: const EdgeInsets.only(top: 8),
                       decoration: const BoxDecoration(
                         color: _primaryColor,
                         borderRadius: BorderRadius.only(
-                            topRight: Radius.circular(5),
-                            bottomRight: Radius.circular(5)),
+                          topRight: Radius.circular(5),
+                          bottomRight: Radius.circular(5),
+                        ),
                       ),
                       child: const Text(
-                        '-%', // Simulação do selo de desconto
+                        '-%',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -191,27 +172,22 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
             ),
           ),
 
-          // 📝 INFORMAÇÕES E PREÇO
+          // ---------- INFORMAÇÕES ----------
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Nome do Produto
                   Text(
                     product.name,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.black87,
-                    ),
+                    style: const TextStyle(fontSize: 12),
                   ),
 
                   const SizedBox(height: 5),
 
-                  // Preço Original Riscado (se houver desconto)
                   if (hasDiscount)
                     Text(
                       'R\$ ${product.originalPrice!.toStringAsFixed(2)}',
@@ -222,7 +198,6 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
                       ),
                     ),
 
-                  // Preço Atual
                   Text(
                     'R\$ ${product.price.toStringAsFixed(2)}',
                     style: TextStyle(
@@ -234,7 +209,6 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
 
                   const Spacer(),
 
-                  // Ação: Adiciona ao carrinho
                   GestureDetector(
                     onTap: () => _addToCart(product),
                     child: Container(
@@ -248,9 +222,10 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
                       child: const Text(
                         'Comprar',
                         style: TextStyle(
-                            color: Colors.black87,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500),
+                          color: Colors.black87,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),
@@ -274,10 +249,7 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
           children: [
             const DrawerHeader(
               decoration: BoxDecoration(color: _primaryColor),
-              child: Text(
-                'Menu',
-                style: TextStyle(color: Colors.white, fontSize: 22),
-              ),
+              child: Text('Menu', style: TextStyle(color: Colors.white, fontSize: 22)),
             ),
             ListTile(
               leading: const Icon(Icons.home),
@@ -288,8 +260,7 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
               leading: const Icon(Icons.shopping_cart),
               title: const Text('Carrinho'),
               onTap: () {
-                Navigator.push(
-                    context, MaterialPageRoute(builder: (_) => TelaCarrinho()));
+                Navigator.push(context, MaterialPageRoute(builder: (_) => TelaCarrinho()));
               },
             ),
             ListTile(
@@ -297,23 +268,20 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
               title: const Text('Acompanhar Pedido'),
               onTap: () {
                 Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) =>
-                            TelaAcompanharPedido(pedidoId: '')));
+                  context,
+                  MaterialPageRoute(builder: (_) => TelaAcompanharPedido(pedidoId: '')),
+                );
               },
             ),
           ],
         ),
       ),
 
-      // AppBar com Icone de Menu e Barra de Pesquisa como no protótipo
+      // Barra de Pesquisa
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black87),
-
-        // Substituindo o AppBar title pela barra de pesquisa
         title: Container(
           height: 40,
           decoration: BoxDecoration(
@@ -324,25 +292,15 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
             controller: _searchController,
             decoration: const InputDecoration(
               hintText: 'Procurar Item...',
-              hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
               border: InputBorder.none,
               contentPadding: EdgeInsets.only(left: 10, bottom: 10),
-            ),
-            style: const TextStyle(
-              color: Colors.black87,
-              fontSize: 14,
             ),
           ),
         ),
       ),
 
       body: filteredProducts.isEmpty
-          ? Center(
-              child: Text(
-                'Nenhum produto encontrado',
-                style: TextStyle(fontSize: 18, color: Colors.grey.shade700),
-              ),
-            )
+          ? Center(child: Text('Nenhum produto encontrado'))
           : GridView.builder(
               padding: const EdgeInsets.all(8),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -352,70 +310,46 @@ class _TelaProdutosClienteState extends State<TelaProdutosCliente> {
                 mainAxisSpacing: 8,
               ),
               itemCount: filteredProducts.length,
-              itemBuilder: (context, index) {
-                final product = filteredProducts[index];
-                return _buildProductCard(product); // Chamando o novo widget
-              },
+              itemBuilder: (context, index) => _buildProductCard(filteredProducts[index]),
             ),
 
-      // ⬇️ Barra de Navegação Inferior Fixa
       bottomNavigationBar: Container(
         height: 60,
         decoration: const BoxDecoration(
           color: Colors.white,
           boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 5,
-              spreadRadius: 2,
-            ),
+            BoxShadow(color: Colors.black12, blurRadius: 5, spreadRadius: 2),
           ],
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            // Botão Carrinho
             Expanded(
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.push(
-                      context, MaterialPageRoute(builder: (_) => TelaCarrinho()));
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => TelaCarrinho()));
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _primaryColor, // Vermelho
+                  backgroundColor: _primaryColor,
                   foregroundColor: Colors.white,
-                  shape: const RoundedRectangleBorder(),
                   padding: const EdgeInsets.symmetric(vertical: 15),
-                  elevation: 0,
                 ),
-                child: const Text(
-                  'Carrinho',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+                child: const Text('Carrinho'),
               ),
             ),
-
-            // Botão Pedidos
             Expanded(
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) =>
-                              TelaAcompanharPedido(pedidoId: '')));
+                    context,
+                    MaterialPageRoute(builder: (_) => TelaAcompanharPedido(pedidoId: '')),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _secondaryColor, // Cinza
+                  backgroundColor: _secondaryColor,
                   foregroundColor: Colors.white,
-                  shape: const RoundedRectangleBorder(),
                   padding: const EdgeInsets.symmetric(vertical: 15),
-                  elevation: 0,
                 ),
-                child: const Text(
-                  'Pedidos',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+                child: const Text('Pedidos'),
               ),
             ),
           ],

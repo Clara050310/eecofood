@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+// Se você for salvar CPF/Telefone no Firestore, precisará desta importação:
+// import 'package:cloud_firestore/cloud_firestore.dart'; 
 
 import 'tela_login.dart';
-import 'tela_produtos_cliente.dart';
 
 class TelaRegistro extends StatefulWidget {
   @override
@@ -11,19 +11,24 @@ class TelaRegistro extends StatefulWidget {
 }
 
 class _TelaRegistroState extends State<TelaRegistro> {
+  // Controladores de Texto (agora simples, sem máscara)
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _cpfController = TextEditingController(); // Simples
+  final _phoneController = TextEditingController(); // Simples
+
+  bool _isBeneficiary = false; 
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
-
-  bool _erroLogo = false;
 
   Future<void> _register() async {
     final email = _emailController.text.trim();
     final pass = _passwordController.text.trim();
+    // Não é necessário remover máscara se não usarmos MaskedTextController
+    final cpf = _cpfController.text.trim(); 
+    final phone = _phoneController.text.trim(); 
 
-    if (email.isEmpty || pass.isEmpty) {
+    if (email.isEmpty || pass.isEmpty || cpf.isEmpty || phone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Preencha todos os campos')),
       );
@@ -31,15 +36,20 @@ class _TelaRegistroState extends State<TelaRegistro> {
     }
 
     try {
+      // 1. Cria o usuário no Firebase Authentication
       await _auth.createUserWithEmailAndPassword(
         email: email,
         password: pass,
       );
 
+      // 2. Salva dados adicionais no Firestore (Exemplo Comentado)
+      // (Você precisará de 'cloud_firestore' e descomentar a lógica)
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Cadastro realizado com sucesso!')),
       );
 
+      // Redireciona para a tela de login após o cadastro
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => TelaLogin()),
@@ -51,30 +61,6 @@ class _TelaRegistroState extends State<TelaRegistro> {
     }
   }
 
-  Future<void> _registerWithGoogle() async {
-    try {
-      final user = await _googleSignIn.signIn();
-      if (user == null) return;
-
-      final auth = await user.authentication;
-
-      final credential = GoogleAuthProvider.credential(
-        idToken: auth.idToken,
-        accessToken: auth.accessToken,
-      );
-
-      await FirebaseAuth.instance.signInWithCredential(credential);
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => TelaProdutosCliente()),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao entrar com Google')),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +69,7 @@ class _TelaRegistroState extends State<TelaRegistro> {
         width: double.infinity,
         height: double.infinity,
 
-        /// 🔥 GRADIENTE IGUAL AO DA IMAGEM
+        /// GRADIENTE
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -102,29 +88,11 @@ class _TelaRegistroState extends State<TelaRegistro> {
                 /// LOGO
                 Column(
                   children: [
-                    _erroLogo
-                        ? Column(
-                            children: [
-                              Icon(Icons.error, color: Colors.red, size: 40),
-                              SizedBox(height: 4),
-                              Text(
-                                "Erro ao carregar a logo",
-                                style: TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 14,
-                                ),
-                              )
-                            ],
-                          )
-                        : Image.asset(
-                            "assets/logo.png",
-                            width: 120,
-                            height: 120,
-                            errorBuilder: (_, __, ___) {
-                              setState(() => _erroLogo = true);
-                              return SizedBox();
-                            },
-                          ),
+                    Image.asset(
+                      "assets/logo.png",
+                      width: 120,
+                      height: 120,
+                    ),
                     SizedBox(height: 20),
                   ],
                 ),
@@ -146,45 +114,28 @@ class _TelaRegistroState extends State<TelaRegistro> {
 
                   child: Column(
                     children: [
-                      /// GOOGLE BUTTON
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: _registerWithGoogle,
-                          icon: Image.network(
-                            "https://developers.google.com/identity/images/g-logo.png",
-                            width: 20,
-                          ),
-                          label: Text("Continuar com o Google"),
-                          style: OutlinedButton.styleFrom(
-                            padding: EdgeInsets.symmetric(vertical: 12),
-                            side: BorderSide(color: Colors.grey.shade400),
-                          ),
+                      /// CAMPOS CPF, TELEFONE, EMAIL E SENHA
+                      TextField(
+                        controller: _cpfController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: "CPF",
+                          border: OutlineInputBorder(),
                         ),
                       ),
-
-                      SizedBox(height: 16),
-
-                      /// SEPARADOR
-                      Row(
-                        children: [
-                          Expanded(child: Divider(color: Colors.grey.shade400)),
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8),
-                            child: Text(
-                              "Ou",
-                              style: TextStyle(color: Colors.grey.shade600),
-                            ),
-                          ),
-                          Expanded(child: Divider(color: Colors.grey.shade400)),
-                        ],
+                      SizedBox(height: 12),
+                      TextField(
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        decoration: InputDecoration(
+                          labelText: "Telefone",
+                          border: OutlineInputBorder(),
+                        ),
                       ),
-
-                      SizedBox(height: 16),
-
-                      /// CAMPOS DE EMAIL E SENHA
+                      SizedBox(height: 12),
                       TextField(
                         controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
                         decoration: InputDecoration(
                           labelText: "Email",
                           border: OutlineInputBorder(),
@@ -200,7 +151,30 @@ class _TelaRegistroState extends State<TelaRegistro> {
                         ),
                       ),
 
-                      SizedBox(height: 20),
+                      SizedBox(height: 16),
+
+                      /// OPÇÃO DE BENEFICIÁRIO
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: _isBeneficiary,
+                            onChanged: (bool? newValue) {
+                              setState(() {
+                                _isBeneficiary = newValue ?? false;
+                              });
+                            },
+                            activeColor: Color(0xFF8B0000), // Cor do tema
+                          ),
+                          Flexible(
+                            child: Text(
+                              "Sou beneficiário de algum programa social do governo (opcional)",
+                              style: TextStyle(fontSize: 14),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(height: 12),
 
                       /// BOTÃO REGISTRAR (VERMELHO)
                       SizedBox(

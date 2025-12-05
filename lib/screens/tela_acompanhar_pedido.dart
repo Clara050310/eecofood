@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'tela_qr_code.dart'; // Importação da tela do QR Code
 
 class TelaAcompanharPedido extends StatefulWidget {
   final String pedidoId;
 
-  const TelaAcompanharPedido({super.key, required this.pedidoId});
+  // ID de teste como fallback
+  const TelaAcompanharPedido({super.key, this.pedidoId = 'ID_DE_TESTE_FIREBASE'}); 
 
   @override
   State<TelaAcompanharPedido> createState() => _TelaAcompanharPedidoState();
@@ -14,27 +16,23 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
   final TextEditingController _msgController = TextEditingController();
 
   String _metodoEntrega = "delivery";
+  late String _currentPedidoId;
+
+  static const Color _primaryColor = Color(0xFF8B0000); 
+  static const Color _secondaryColor = Colors.green; 
 
   @override
   void initState() {
     super.initState();
-
-    // 🚨 Proteção contra pedidoId vazio
-    if (widget.pedidoId.isEmpty) {
-      print("ERRO: pedidoId está vazio!");
-      return;
-    }
-
+    _currentPedidoId = widget.pedidoId.isNotEmpty ? widget.pedidoId : 'ID_DE_TESTE_FIREBASE';
     _carregarMetodoEntrega();
   }
 
-  // 🔹 Carrega método de entrega com verificação
+  // 🔹 Carrega método de entrega (Mantido)
   Future<void> _carregarMetodoEntrega() async {
-    if (widget.pedidoId.isEmpty) return;
-
     final pedido = await FirebaseFirestore.instance
         .collection("pedidos")
-        .doc(widget.pedidoId)
+        .doc(_currentPedidoId) 
         .get();
 
     if (pedido.exists) {
@@ -44,30 +42,39 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
     }
   }
 
-  // 🔹 Atualiza método de entrega com segurança
+  // 🔹 Atualiza método de entrega com NAVEGAÇÃO para o QR Code
   Future<void> _alterarMetodoEntrega(String metodo) async {
-    if (widget.pedidoId.isEmpty) return;
-
+    // 1. Atualiza o Firestore
     await FirebaseFirestore.instance
         .collection("pedidos")
-        .doc(widget.pedidoId)
+        .doc(_currentPedidoId) 
         .update({"metodoEntrega": metodo});
 
+    // 2. Atualiza o estado local para que o chip fique selecionado/desselecionado
     setState(() {
       _metodoEntrega = metodo;
     });
+
+    // 3. Se o método selecionado for 'retirada', NAVEGA para a tela do QR Code
+    if (metodo == 'retirada') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          // Passa o ID do pedido
+          builder: (_) => TelaQrCode(pedidoId: _currentPedidoId),
+        ),
+      );
+    }
   }
 
-  // 🔹 Envia mensagem com proteção
+  // 🔹 Envia mensagem (Mantido)
   Future<void> _enviarMensagem() async {
-    if (widget.pedidoId.isEmpty) return;
-
     final texto = _msgController.text.trim();
     if (texto.isEmpty) return;
 
     await FirebaseFirestore.instance
         .collection("pedidos")
-        .doc(widget.pedidoId)
+        .doc(_currentPedidoId) 
         .collection("chat")
         .add({
       "texto": texto,
@@ -80,23 +87,11 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
 
   @override
   Widget build(BuildContext context) {
-    // 🚨 Falha crítica → impede crash
-    if (widget.pedidoId.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(title: Text("Acompanhar Pedido")),
-        body: Center(
-          child: Text(
-            "Erro: pedidoId não foi fornecido.",
-            style: TextStyle(fontSize: 18, color: Colors.red),
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: Text("Acompanhar Pedido"),
-        backgroundColor: Colors.green,
+        backgroundColor: _primaryColor, 
+        foregroundColor: Colors.white,
       ),
 
       body: Column(
@@ -114,7 +109,7 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Pedido #${widget.pedidoId}",
+                  "Pedido #ID: ${_currentPedidoId}", 
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
 
@@ -133,36 +128,47 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
                       label: Text("Entrega"),
                       selected: _metodoEntrega == "delivery",
                       onSelected: (_) => _alterarMetodoEntrega("delivery"),
-                      selectedColor: Colors.green,
+                      selectedColor: _primaryColor,
+                      labelStyle: TextStyle(
+                        color: _metodoEntrega == "delivery" ? Colors.white : Colors.black87,
+                      ),
                     ),
                     SizedBox(width: 12),
+                    // 👇 CHIP DE RETIRADA COM A LÓGICA DE SELEÇÃO E NAVEGAÇÃO
                     ChoiceChip(
                       label: Text("Retirada"),
-                      selected: _metodoEntrega == "retirada",
-                      onSelected: (_) => _alterarMetodoEntrega("retirada"),
-                      selectedColor: Colors.green,
+                      selected: _metodoEntrega == "retirada", // <--- FICA SELECIONADO SE _metodoEntrega É 'retirada'
+                      onSelected: (_) => _alterarMetodoEntrega("retirada"), // <--- CHAMA A NAVEGAÇÃO
+                      selectedColor: _primaryColor,
+                      labelStyle: TextStyle(
+                        color: _metodoEntrega == "retirada" ? Colors.white : Colors.black87,
+                      ),
                     ),
                   ],
                 ),
 
                 SizedBox(height: 16),
-
+                
                 StreamBuilder<DocumentSnapshot>(
                   stream: FirebaseFirestore.instance
                       .collection("pedidos")
-                      .doc(widget.pedidoId)
+                      .doc(_currentPedidoId) 
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
                       return Text("Carregando status...");
                     }
 
-                    String status =
-                        snapshot.data?.get("status") ?? "Preparando";
+                    String status = "Preparando";
+                    if (snapshot.data?.exists == true) {
+                      status = snapshot.data?.get("status") ?? "Preparando";
+                    }
+                    
+                    Color statusIconColor = _secondaryColor; 
 
                     return Row(
                       children: [
-                        Icon(Icons.local_shipping, color: Colors.green),
+                        Icon(Icons.local_shipping, color: statusIconColor),
                         SizedBox(width: 8),
                         Text(
                           "Status: $status",
@@ -177,24 +183,22 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
           ),
 
           // -------------------------------------------------------------------
-          // CHAT
+          // CHAT (Mantido)
           // -------------------------------------------------------------------
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection("pedidos")
-                  .doc(widget.pedidoId)
+                  .doc(_currentPedidoId) 
                   .collection("chat")
                   .orderBy("timestamp", descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator());
                 }
-
-                final mensagens = snapshot.data!.docs;
-
-                if (mensagens.isEmpty) {
+                
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return Center(
                     child: Text(
                       "Nenhuma mensagem ainda...",
@@ -202,6 +206,8 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
                     ),
                   );
                 }
+
+                final mensagens = snapshot.data!.docs;
 
                 return ListView(
                   reverse: true,
@@ -218,7 +224,7 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
                             vertical: 10, horizontal: 14),
                         decoration: BoxDecoration(
                           color: souEu
-                              ? Colors.green
+                              ? _primaryColor
                               : Colors.grey.shade300,
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -238,7 +244,7 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
           ),
 
           // -------------------------------------------------------------------
-          // CAMPO DE MENSAGEM
+          // CAMPO DE MENSAGEM (Mantido)
           // -------------------------------------------------------------------
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -260,7 +266,7 @@ class _TelaAcompanharPedidoState extends State<TelaAcompanharPedido> {
                 ),
                 SizedBox(width: 8),
                 CircleAvatar(
-                  backgroundColor: Colors.green,
+                  backgroundColor: _primaryColor,
                   child: IconButton(
                     icon: Icon(Icons.send, color: Colors.white),
                     onPressed: _enviarMensagem,
